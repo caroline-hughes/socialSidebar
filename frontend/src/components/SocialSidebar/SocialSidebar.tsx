@@ -21,7 +21,6 @@ export default function SocialSidebar(): JSX.Element {
           <Tooltip label={`Town ID: ${currentTownID}`} aria-label='A tooltip'>
             <Heading fontSize='l' as='h2'>Current town: {currentTownFriendlyName}</Heading>
           </Tooltip>
-         
         <PlayersList />
         <ConversationAreasList />
       </VStack>

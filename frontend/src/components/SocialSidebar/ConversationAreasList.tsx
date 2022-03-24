@@ -1,5 +1,41 @@
-import { Box } from '@chakra-ui/react';
+import { Box, Heading, UnorderedList, ListItem } from '@chakra-ui/react';
 import React from 'react';
+import ConversationArea from '../../classes/ConversationArea';
+import  * as blah  from '../../classes/ConversationArea';
+import PlayerName from './PlayerName';
+import useConversationAreas from '../../hooks/useConversationAreas';
+import usePlayersInTown from '../../hooks/usePlayersInTown';
+import Player from '../../classes/Player';
+
+type ActiveConversationAreaProps = {
+  conv: ConversationArea
+}
+
+// TODO
+export function ActiveConversationArea({conv} : ActiveConversationAreaProps): JSX.Element {
+  const players: Player[] = usePlayersInTown();
+
+  function playerByID(id: string) : Player | undefined {
+    return players.find(p => p.id === id);
+  }
+
+  return (
+  <Box> 
+    <Heading fontSize='l' as='h3'>{conv.label}: {conv.topic}</Heading>
+    <UnorderedList>
+    {conv.occupants.map((o) => {
+      const playa = playerByID(o);
+
+      return playa ?
+        <ListItem key={o}>
+          <PlayerName key={playa.id} player={playa} />
+        </ListItem>
+        : '';
+    }
+    )}
+  </UnorderedList>
+  </Box>);
+}
 
 /**
  * Displays a list of "active" conversation areas, along with their occupants 
@@ -25,5 +61,25 @@ import React from 'react';
  * See relevant hooks: useConversationAreas, usePlayersInTown.
  */
 export default function ConversationAreasList(): JSX.Element {
-  return <Box />;
+
+  const cas = useConversationAreas();
+
+  function activeCAs(loCAs: ConversationArea[]) : ConversationArea[] {
+    return loCAs.filter(ca => ca.topic !== blah.NO_TOPIC_STRING);
+  }
+
+  const sortAlphaNum = (a: ConversationArea, b: ConversationArea) => a.label.localeCompare(b.label, 'en', { numeric: true })
+
+  return (
+  <Box> 
+    <Heading fontSize='l' as='h2'>Active Conv Areas</Heading>
+
+    {!activeCAs(cas).length ?
+      <Heading fontSize='l' as='p'>No active conversation areas</Heading> 
+      : <UnorderedList> {[...activeCAs(cas)].sort(sortAlphaNum).map((ca)=>
+        <ListItem key={ca.label}> <ActiveConversationArea conv={ca}/> </ListItem>  
+      )} </UnorderedList>
+      }
+  </Box>);
 }
+
