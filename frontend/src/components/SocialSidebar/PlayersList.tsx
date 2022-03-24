@@ -1,6 +1,8 @@
 import React from 'react';
-
-
+import { ListItem, OrderedList } from '@chakra-ui/react';
+import PlayerName from './PlayerName';
+import usePlayersInTown from '../../hooks/usePlayersInTown';
+import Player from '../../classes/Player';
 /**
  * Lists the current players in the town, along with the current town's name and ID
  * 
@@ -13,6 +15,16 @@ import React from 'react';
  * See `usePlayersInTown` and `useCoveyAppState` hooks to find the relevant state.
  * 
  */
-export default function PlayersInTownList(): JSX.Element {
-  return <></>
+
+ export default function PlayerList(): JSX.Element {
+
+  const players = usePlayersInTown();
+  
+  const sortAlphaNum = (a: Player, b: Player) => a.userName.localeCompare(b.userName, 'en', { numeric: true })
+
+  return <OrderedList>
+    {[...players].sort(sortAlphaNum).map((p)=>
+      <ListItem key={p.id}><PlayerName key={p.id} player={p} /></ListItem>  
+    )}
+  </OrderedList>
 }
