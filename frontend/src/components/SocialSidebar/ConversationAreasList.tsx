@@ -1,74 +1,65 @@
 import { Box, Heading, UnorderedList, ListItem } from '@chakra-ui/react';
-import React, {
-  useEffect,
-  useState
-} from 'react';
-import ConversationArea , { ConversationAreaListener } from '../../classes/ConversationArea';
-import  * as blah  from '../../classes/ConversationArea';
-// import { ConversationAreaListener } from '../../classes/ConversationArea';
+import React, { useEffect, useState } from 'react';
+import ConversationArea from '../../classes/ConversationArea';
+import  * as util  from '../../classes/ConversationArea';
 import PlayerName from './PlayerName';
 import useConversationAreas from '../../hooks/useConversationAreas';
 import usePlayersInTown from '../../hooks/usePlayersInTown';
 import Player from '../../classes/Player';
 
+// the ActiveConversationArea component recieves a ConversationArea
 type ActiveConversationAreaProps = {
-  conv: ConversationArea
+  conversation: ConversationArea
 }
 
-// TODO
-export function ActiveConversationArea({conv} : ActiveConversationAreaProps): JSX.Element {
+/**
+ * Lists the players currently in this active (non-empty) conversation area,
+ * along with the conversation's label and topic
+ * 
+ * Players in the list are unordered, appearing in whichever order they appear in the 
+ * conversation's occupants list
+ * 
+ * A subscription to occupancy updates updates the current occupants, and is removed on unmount
+ */
+export function ActiveConversationArea({conversation} : ActiveConversationAreaProps): JSX.Element {
   const players: Player[] = usePlayersInTown();
-
-  const [occ, setOcc] = useState<string[]>(conv.occupants);
+  const [currOccupants, setCurrOccupants] = useState<string[]>(conversation.occupants);
 
   function playerByID(id: string) : Player | undefined {
-    return players.find(p => p.id === id);
+    return players.find(player => player.id === id);
   }
 
-  // An useEffect hook, 
-  // which subscribes to occupancy updates by registering an onOccupantsChange listener 
-  // on the component’s corresponding conversation area object:
-
-  // The listener must be registered exaclty once (when the component is mounted), 
-  // and unregistered exactly once (when the component is unmounted)
-
-  // The listener must update the rendered list of occupants in the conversation area when it receives updates
+  // Subscribe to onOccupantsChange events for this conversation
   useEffect(() => {
-    // define the listener
     const occsChangedListener = {
       onOccupantsChange: (newOcc: string[]) => {
-        // conv.occupants = newOcc;
-        setOcc(newOcc);
+        setCurrOccupants(newOcc);
       },
     };
 
-    // add the listener to the ca object
-    conv.addListener(occsChangedListener);
-
-    // call it with the new occupants
-    occsChangedListener.onOccupantsChange(conv.occupants);
+    conversation.addListener(occsChangedListener);
+    occsChangedListener.onOccupantsChange(conversation.occupants);
     
-    // remove the listener on unmount
+    // Unregister listener on unmount
     return () => {
-      conv.removeListener(occsChangedListener);
+      conversation.removeListener(occsChangedListener);
     };
-  }, [conv, conv.occupants]);
+  }, [conversation, conversation.occupants]);
 
   return (
   <Box> 
-    <Heading fontSize='l' as='h3'>{conv.label}: {conv.topic}</Heading>
+    <Heading fontSize='l' as='h3'>{conversation.label}: {conversation.topic}</Heading>
     <UnorderedList>
-    {occ.map((o) => {
-      const playa = playerByID(o);
-
-      return playa ?
-        <ListItem key={o}>
-          <PlayerName key={playa.id} player={playa} />
-        </ListItem>
-        : '';
-    }
-    )}
-  </UnorderedList>
+      {currOccupants.map((occupant) => {
+        const player = playerByID(occupant);
+        return player ?
+          <ListItem key={occupant}>
+            <PlayerName key={player.id} player={player} />
+          </ListItem>
+          : '';
+      }
+      )}
+    </UnorderedList>
   </Box>);
 }
 
@@ -97,24 +88,28 @@ export function ActiveConversationArea({conv} : ActiveConversationAreaProps): JS
  */
 export default function ConversationAreasList(): JSX.Element {
 
-  const cas = useConversationAreas();
+  const conversations = useConversationAreas();
 
-  function activeCAs(loCAs: ConversationArea[]) : ConversationArea[] {
-    return loCAs.filter(ca => ca.topic !== blah.NO_TOPIC_STRING);
-  }
+  const getActiveConversations = (allConversations: ConversationArea[]) => 
+    allConversations.filter(c => c.topic !== util.NO_TOPIC_STRING);
 
-  const sortAlphaNum = (a: ConversationArea, b: ConversationArea) => a.label.localeCompare(b.label, 'en', { numeric: true })
+  const alphanumByLabel = (c1: ConversationArea, c2: ConversationArea) => 
+    c1.label.localeCompare(c2.label, 'en', { numeric: true });
 
   return (
   <Box> 
     <Heading fontSize='l' as='h2'>Active Conv Areas</Heading>
-
-    {!activeCAs(cas).length ?
+    {!getActiveConversations(conversations).length ?
       <Heading fontSize='l' as='p'>No active conversation areas</Heading> 
-      : <UnorderedList> {[...activeCAs(cas)].sort(sortAlphaNum).map((ca)=>
-        <ListItem key={ca.label}> <ActiveConversationArea conv={ca}/> </ListItem>  
-      )} </UnorderedList>
-      }
+      : 
+      <UnorderedList> 
+      {[...getActiveConversations(conversations)].sort(alphanumByLabel).map((c)=>
+        <ListItem key={c.label}>
+          <ActiveConversationArea conversation={c}/>
+        </ListItem>  
+      )} 
+      </UnorderedList>
+    }
   </Box>);
 }
 

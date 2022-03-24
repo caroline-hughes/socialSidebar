@@ -1,8 +1,10 @@
 import React from 'react';
-import { ListItem, OrderedList } from '@chakra-ui/react';
+import { ListItem, OrderedList, Tooltip, Heading } from '@chakra-ui/react';
 import PlayerName from './PlayerName';
 import usePlayersInTown from '../../hooks/usePlayersInTown';
 import Player from '../../classes/Player';
+import useCoveyAppState from '../../hooks/useCoveyAppState';
+
 /**
  * Lists the current players in the town, along with the current town's name and ID
  * 
@@ -17,14 +19,24 @@ import Player from '../../classes/Player';
  */
 
  export default function PlayerList(): JSX.Element {
-
+  const {currentTownID, currentTownFriendlyName} = useCoveyAppState();
   const players = usePlayersInTown();
   
-  const sortAlphaNum = (a: Player, b: Player) => a.userName.localeCompare(b.userName, 'en', { numeric: true })
+  const alphanumByUsername = (p1: Player, p2: Player) => 
+    p1.userName.localeCompare(p2.userName, 'en', { numeric: true })
 
-  return <OrderedList>
-    {[...players].sort(sortAlphaNum).map((p)=>
-      <ListItem key={p.id}><PlayerName key={p.id} player={p} /></ListItem>  
-    )}
-  </OrderedList>
+  return (
+    <>
+      <Tooltip label={`Town ID: ${currentTownID}`}>
+        <Heading fontSize='l' as='h2'>Current town: {currentTownFriendlyName}</Heading>
+      </Tooltip>
+      <OrderedList>
+        {[...players].sort(alphanumByUsername).map((p) => 
+          <ListItem key={p.id}>
+            <PlayerName key={p.id} player={p}/>
+          </ListItem>
+        )}
+      </OrderedList>
+    </>
+  )
 }
