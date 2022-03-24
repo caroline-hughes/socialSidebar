@@ -1,7 +1,11 @@
 import { Box, Heading, UnorderedList, ListItem } from '@chakra-ui/react';
-import React from 'react';
-import ConversationArea from '../../classes/ConversationArea';
+import React, {
+  useEffect,
+  useState
+} from 'react';
+import ConversationArea , { ConversationAreaListener } from '../../classes/ConversationArea';
 import  * as blah  from '../../classes/ConversationArea';
+// import { ConversationAreaListener } from '../../classes/ConversationArea';
 import PlayerName from './PlayerName';
 import useConversationAreas from '../../hooks/useConversationAreas';
 import usePlayersInTown from '../../hooks/usePlayersInTown';
@@ -15,15 +19,46 @@ type ActiveConversationAreaProps = {
 export function ActiveConversationArea({conv} : ActiveConversationAreaProps): JSX.Element {
   const players: Player[] = usePlayersInTown();
 
+  const [occ, setOcc] = useState<string[]>(conv.occupants);
+
   function playerByID(id: string) : Player | undefined {
     return players.find(p => p.id === id);
   }
+
+  // An useEffect hook, 
+  // which subscribes to occupancy updates by registering an onOccupantsChange listener 
+  // on the component’s corresponding conversation area object:
+
+  // The listener must be registered exaclty once (when the component is mounted), 
+  // and unregistered exactly once (when the component is unmounted)
+
+  // The listener must update the rendered list of occupants in the conversation area when it receives updates
+  useEffect(() => {
+    // define the listener
+    const occsChangedListener = {
+      onOccupantsChange: (newOcc: string[]) => {
+        // conv.occupants = newOcc;
+        setOcc(newOcc);
+      },
+    };
+
+    // add the listener to the ca object
+    conv.addListener(occsChangedListener);
+
+    // call it with the new occupants
+    occsChangedListener.onOccupantsChange(conv.occupants);
+    
+    // remove the listener on unmount
+    return () => {
+      conv.removeListener(occsChangedListener);
+    };
+  }, [conv, conv.occupants]);
 
   return (
   <Box> 
     <Heading fontSize='l' as='h3'>{conv.label}: {conv.topic}</Heading>
     <UnorderedList>
-    {conv.occupants.map((o) => {
+    {occ.map((o) => {
       const playa = playerByID(o);
 
       return playa ?
